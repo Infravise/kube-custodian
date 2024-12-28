@@ -1,0 +1,61 @@
+default:
+  image: registry.gitlab.com/infravise/foundation/warp-ci/production/docker_ci:latest
+  tags: [foundation-dev]
+
+stages:
+  - build
+  - test
+  - push
+  - helm
+  - release
+
+variables:
+  APP_VERSION: 0.1.0 # Must change with every merge to 'main'
+
+release_kube_custodian:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs: [push_kube_custodian_prd]
+  when: on_success
+  script:
+    - echo "Running the release job."
+  release:
+    tag_name: $IMAGE_TAG
+    tag_message: 'Tag created via CI/CD pipeline: ${CI_PIPELINE_ID}'
+    name: 'Release $APP_VERSION'
+    description: './CHANGLOG.md'
+  extends: [.master_rules]
+
+.dev:
+  environment: dev
+  tags: [foundation-dev]
+  variables:
+    ENV: dev
+
+.production:
+  environment: production
+  tags: [foundation-dev]
+  variables:
+    ENV: production
+
+.merge_request_rules:
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+.master_rules:
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+include:
+  # Include Foundation Docker CI Template
+  - project: infravise/foundation/warp-ci
+    file: ci/templates/docker_common.yml
+  # Include Foundation Helm CI Template
+  - project: infravise/foundation/warp-cd
+    file: ci/templates/helm_common.yml
+  # Include all local CI files
+  - local: ci/**.yml
