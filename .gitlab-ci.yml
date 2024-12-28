@@ -20,7 +20,7 @@ release_kube_custodian:
   script:
     - echo "Running the release job."
   release:
-    tag_name: $IMAGE_TAG
+    tag_name: $APP_VERSION
     tag_message: 'Tag created via CI/CD pipeline: ${CI_PIPELINE_ID}'
     name: 'Release $APP_VERSION'
     description: './CHANGLOG.md'
