@@ -1,93 +1,99 @@
-# kube-janitor
+# Kube Custodian
 
+![Pipeline Status](https://gitlab.com/infravise/foundation/tooling/kube-custodian/badges/main/pipeline.svg)
+![Test Coverage](https://gitlab.com/infravise/foundation/tooling/kube-custodian/badges/main/coverage.svg)
+![Releases](https://gitlab.com/infravise/foundation/tooling/kube-custodian/-/badges/release.svg)
 
+kube-custodian is an open-source Go application capable of cleaning epheneral resources on kubernetes through the use of labels in near real-time. In addition to this, kube-custodian is capable of automatically removing dangling/orphaned workloads that get left behind and tend to hog resources, preventing future workloads from being scheduled.
 
-## Getting started
+## Core Features
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### TTL
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+When the `kube-custodian/ttl` label is added to a resource, kube-custodian will do the following:
 
-## Add your files
+1.  Fetch all resources containing the `kube-custodian/ttl` label
+2.  Grab their values, add them to their resources respective creation timestamp, and assert them against the current time to determine whether or not they are stale
+3.  Mark the stale resources for deletion
+4.  Delete the stale resources from the cluster
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+The `kube-custodian/ttl` label currently supports the following options:
+
+- `w` (weeks)
+- `d` (days)
+- `h` (hours)
+- `m` (minutes)
+
+Here are some examples:
+
+In the following example, we want our resource(s) to be removed from the cluster 2 weeks after they've been deployed. This could be quite useful for those who are working on new application features, bug fixes, etc.. in an Agile sprint.
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/infravise/foundation/tooling/kube-janitor.git
-git branch -M main
-git push -uf origin main
+kube-custodian/ttl=2w
 ```
 
-## Integrate with your tools
+In the following example, we want our resource(s) to be removed from the cluster only 30 minuts after they've been deployed. This is particulary useful for small, consistent workloads that get spawned by another application like Gitlab runners.
 
-- [ ] [Set up project integrations](https://gitlab.com/infravise/foundation/tooling/kube-janitor/-/settings/integrations)
+```
+kube-custodian/ttl=30m
+```
 
-## Collaborate with your team
+In the following example, we want our resource(s) to be removed from the cluster 2 days, 12 hours, and 30 minutes after they've been deployed.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```
+kube-custodian/ttl=2d12h30m
+```
 
-## Test and Deploy
+### Expiry Date
 
-Use the built-in continuous integration in GitLab.
+When the `kube-custodian/expires` label is added to a resource, kube-custodian will do the following:
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+1. Fetch all the resources containing the `kube-custodian/expires` label
+2. Grab their values and assert them to the current time to determine whether or not they're expired
+3. Mark the expired resources for deletion
+4. Delete the expired resources from the cluster
 
-***
+The `kube-custodian/expires` label is expecting a [RFC3339](https://datatracker.ietf.org/doc/html/rfc3339) compliant timestamp to be provided.
 
-# Editing this README
+Here are some examples:
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+In the following example, we want our resource(s) to be removed from the cluster on April 30th, 2025 at 12:00AM (UTC)
 
-## Suggestions for a good README
+```
+kube-custodian/expires=2025-04-30T00:00:00-00:00
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+In the following example, we want our resource(s) to be removed from the cluster on March 2nd, 2025 at 1:30PM (EST)
 
-## Name
-Choose a self-explaining name for your project.
+```
+kube-custodian/expires=2025-03-02T13:30:00-05:00
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### Dangling Pods
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+By default, kubernetes doesn't support the cleanup of `succeeded` or `failed` pods. Instead, we must do it ourselves manaully or resort to something else that automates this process. Normally, most folks create a bash script and run it as a CronJob on kubernetes that will cleanup the cluster every so often which works perfectly fine, but since this app is incredibly simple, lightweight, and a custodian after all, we decided to add it in anyway. When kube-custodian is deployed to the cluster, it will automatically do this without any additional configuration required. Here is what kube-custodian will do:
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+1. Fetch all the pods in the kubernetes cluster
+2. Grab the pods with a `succeeded` or `failed` status/phase
+3. Remove those pods from the cluster
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## Installation & Deployment
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+The easiest method to deploy kube-custodian to your kubernetes cluster is to use our custom helm chart, to do this, following the steps listed below:
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+_NOTE: The chart version is always an exact match to the application version._
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+1. Download and update the helm repo:
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+```
+helm repo add kube-custodian https://gitlab.com/api/v4/projects/65495019/packages/helm/api/
+helm repo update
+```
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+2. Customize your values file or use the chart's default.
+3. Update your kubernetes context to target the right cluster.
+4. Install the chart on the respective kubernetes cluster:
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+```
+helm install kube-custodian kube-custodian/kube-custodian -f ./path/to/custom/values.yml -n kube-custodian --create-namespace
+```

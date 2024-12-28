@@ -1,0 +1,47 @@
+###################
+# Kube Custodian - Docker
+###################
+.kube_custodian_docker:
+  image: registry.gitlab.com/infravise/foundation/warp-ci/production/docker_ci:latest
+  variables:
+    IMAGE_NAME: kube-custodian
+    IMAGE_TAG: $APP_VERSION
+    DOCKERFILE: ./Dockerfile
+    TARGET_PLATFORMS: "linux/amd64,linux/arm64"
+
+build_kube_custodian:
+  stage: build
+  extends:
+    - .kube_custodian_docker
+    - .merge_request_rules
+    - .build_image
+
+scan_kube_custodian:
+  stage: test
+  needs: [build_kube_custodian]
+  extends:
+    - .kube_custodian_docker
+    - container_scanning
+    - .merge_request_rules
+
+push_kube_custodian_dev:
+  stage: push
+  environment: dev
+  needs: [scan_kube_custodian]
+  when: manual
+  extends:
+    - .kube_custodian_docker
+    - .dev
+    - .merge_request_rules
+    - .push_image
+
+push_kube_custodian_prd:
+  stage: push
+  environment: production
+  needs: [scan_kube_custodian]
+  when: manual
+  extends:
+    - .kube_custodian_docker
+    - .production
+    - .master_rules
+    - .push_image

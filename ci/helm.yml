@@ -1,0 +1,42 @@
+###################
+# Kube Custodian - Helm
+###################
+.kube_custodian_helm:
+  image: registry.gitlab.com/infravise/foundation/warp-ci/production/helm_ci:latest
+  variables:
+    CHART_NAME: kube-custodian
+    CHART_VERSION: $APP_VERSION
+    PACKAGE_REGISTRY: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/helm/api"
+
+lint_kube_custodian_chart:
+  stage: helm
+  needs: []
+  extends:
+    - .kube_custodian_helm
+    - .merge_request_rules
+    - .lint_chart
+
+scan_kube_custodian_chart:
+  stage: helm
+  needs: [lint_kube_custodian_chart]
+  extends:
+    - .kube_custodian_helm
+    - kics-iac-sast
+    - .merge_request_rules
+
+package_kube_custodian_chart:
+  stage: helm
+  needs: [scan_kube_custodian_chart]
+  extends:
+    - .kube_custodian_helm
+    - .merge_request_rules
+    - .package_chart
+
+push_kube_custodian_chart:
+  stage: helm
+  needs: [package_kube_custodian_chart]
+  when: manual
+  extends:
+    - .kube_custodian_helm
+    - .merge_request_rules
+    - .push_chart
