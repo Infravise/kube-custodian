@@ -89,7 +89,7 @@ func fetchEphemeralResources(log *logrus.Logger, discoveryClient *discovery.Disc
 			}
 		}
 	}
-	log.Infof("Found %d ephemeral reources", len(ephemeralResources))
+	log.Infof("Found %d ephemeral reource(s)", len(ephemeralResources))
 	log.Debugf("Ephemeral resources: %v", ephemeralResources)
 	return ephemeralResources
 }
@@ -144,7 +144,7 @@ func processEphemeralResources(log *logrus.Logger, ephemeralResources []Ephemera
 			}
 		}
 	}
-	log.Infof("Found %d expired resources. Preparing for deletion", len(expiredResources))
+	log.Infof("Found %d expired resource(s)", len(expiredResources))
 	log.Debugf("Expired resources: %v", expiredResources)
 	return expiredResources
 }
@@ -163,5 +163,5 @@ func deleteEphemeralResources(log *logrus.Logger, dynamicClient *dynamic.Dynamic
 			log.Errorf("Failed to destroy ephemeral resource [%s/%s:%s], %v", resource.Group, resource.Version, resource.Name, err)
 		}
 	}
-	log.Infof("Deleted %d expired resources", len(expiredResources))
+	log.Infof("Deleted %d expired resource(s)", len(expiredResources))
 }

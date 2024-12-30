@@ -23,7 +23,7 @@ release_kube_custodian:
     tag_name: $APP_VERSION
     tag_message: 'Tag created via CI/CD pipeline: ${CI_PIPELINE_ID}'
     name: 'Release $APP_VERSION'
-    description: './CHANGLOG.md'
+    description: './CHANGELOG.md'
   extends: [.master_rules]
 
 .dev:
