@@ -1,11 +1,15 @@
 ARG SOURCE_TAG=1.23.2-alpine
 
-FROM public.ecr.aws/docker/library/golang:${SOURCE_TAG}
+FROM public.ecr.aws/docker/library/golang:${SOURCE_TAG} AS builder
 
-WORKDIR /app
+COPY . $GOPATH/src/kube-custodian
 
-ADD main.go go.mod go.sum /app/
+WORKDIR $GOPATH/src/kube-custodian
 
 RUN go mod tidy && go build .
 
-ENTRYPOINT ["./kube-custodian"]
+FROM public.ecr.aws/docker/library/alpine:3.21.0
+
+COPY --from=builder /go/src/kube-custodian/kube-custodian /usr/local/bin/
+
+ENTRYPOINT ["kube-custodian"]
