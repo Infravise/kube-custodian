@@ -33,7 +33,7 @@ func fetchDanglingPods(log *logrus.Logger, kubeClient *kubernetes.Clientset) []v
 			danglingPods = append(danglingPods, pod)
 		}
 	}
-	log.Infof("Found %d dangling pods", len(danglingPods))
+	log.Infof("Found %d dangling pod(s)", len(danglingPods))
 	log.Debugf("Dangling pods: %v", danglingPods)
 	return danglingPods
 }
@@ -48,5 +48,5 @@ func deleteDanglingPods(log *logrus.Logger, kubeClient *kubernetes.Clientset, da
 			log.Errorf("Failed to delete dangling pod [%s]: %v", pod.Name, err)
 		}
 	}
-	log.Infof("Deleted %d dangling pods", len(danglingPods))
+	log.Infof("Deleted %d dangling pod(s)", len(danglingPods))
 }
