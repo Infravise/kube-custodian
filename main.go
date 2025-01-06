@@ -3,7 +3,6 @@ package main
 import (
 	danglingpods "kube-custodian/resources/dangling-pods"
 	ephemeralresources "kube-custodian/resources/ephemeral-resources"
-	"log"
 	"os"
 	"time"
 
@@ -63,16 +62,15 @@ func initializeClient(log *logrus.Logger) (discoveryClient *discovery.DiscoveryC
 }
 
 func main() {
-	// Create tmp/health file for probes
-	file, err := os.Create("/tmp/health")
-	if err == nil {
-		file.WriteString("healthy")
-		file.Close()
-	} else {
-		log.Fatalf("Failed to generate file for health check, %v", err)
-	}
 	// Initialize logging & log level
 	log := setLogLevel()
+	// Create tmp/health file for probes
+	file, err := os.Create("/tmp/health")
+	if err != nil {
+		log.Fatalf("Failed to generate file for health check, %v", err)
+	}
+	file.WriteString("healthy")
+	file.Close()
 	// Initialize API clients
 	discoveryClient, dynamicClient, kubeClient := initializeClient(log)
 

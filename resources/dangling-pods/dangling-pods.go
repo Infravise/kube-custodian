@@ -22,7 +22,7 @@ func fetchDanglingPods(log *logrus.Logger, kubeClient *kubernetes.Clientset) []v
 	log.Infoln("Fetching all pods")
 	pods, err := kubeClient.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
-		log.Fatalf("ERROR: Failed to retrieve pods: %v", err)
+		log.Fatalf("Failed to retrieve pods: %v", err)
 	}
 	log.Infoln("Fetched all pods")
 	// Initialize Slice
