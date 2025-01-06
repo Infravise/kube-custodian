@@ -4,7 +4,7 @@
 ![Test Coverage](https://gitlab.com/infravise/foundation/tooling/kube-custodian/badges/main/coverage.svg)
 ![Releases](https://gitlab.com/infravise/foundation/tooling/kube-custodian/-/badges/release.svg)
 
-kube-custodian is an open-source Go application capable of cleaning epheneral resources on kubernetes through the use of labels in near real-time. In addition to this, kube-custodian is capable of automatically removing dangling/orphaned workloads that get left behind and tend to hog resources, preventing future workloads from being scheduled.
+kube-custodian is an open-source Go application capable of cleaning ephemeral resources on kubernetes through the use of labels in near real-time. In addition to this, kube-custodian is capable of automatically removing dangling/orphaned workloads that get left behind and tend to hog resources, preventing future workloads from being scheduled.
 
 ## Core Features
 
@@ -13,7 +13,7 @@ kube-custodian is an open-source Go application capable of cleaning epheneral re
 When the `kube-custodian/ttl` label is added to a resource, kube-custodian will do the following:
 
 1.  Fetch all resources containing the `kube-custodian/ttl` label
-2.  Grab their values, add them to their resources respective creation timestamp, and assert them against the current time to determine whether or not they are stale
+2.  Grab their values, add them to their resources' respective creation timestamp, and assert them against the current time to determine whether or not they are stale
 3.  Mark the stale resources for deletion
 4.  Delete the stale resources from the cluster
 
@@ -32,7 +32,7 @@ In the following example, we want our resource(s) to be removed from the cluster
 kube-custodian/ttl=2w
 ```
 
-In the following example, we want our resource(s) to be removed from the cluster only 30 minuts after they've been deployed. This is particulary useful for small, consistent workloads that get spawned by another application like Gitlab runners.
+In the following example, we want our resource(s) to be removed from the cluster only 30 minutes after they've been deployed. This is particulary useful for small, consistent workloads that get spawned by another application like Gitlab runners.
 
 ```
 kube-custodian/ttl=30m
